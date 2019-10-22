@@ -1,0 +1,70 @@
+---
+title: "R Notebook"
+output: 
+  tufte::tufte_handout: default
+  github_document
+---
+
+
+```{r}
+library(bigrquery)
+project <- "nyc-transit-256016"
+
+query <- "SELECT EXTRACT(MONTH FROM pickup_datetime) AS trip_month, EXTRACT(DAY FROM pickup_datetime) AS trip_day, EXTRACT(HOUR FROM pickup_datetime) as trip_hour, pickup_location_id, count(1) AS trip_per_hour
+FROM `nyc_taxi.tlc_yellow_trips_2018`
+GROUP BY pickup_location_id, trip_month, trip_day, trip_hour
+ORDER BY trip_month, trip_day, trip_hour, trip_per_hour DESC;
+"
+
+result <- query_exec(query, project, use_legacy_sql = FALSE, max_pages = Inf)
+```
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+
+df <- result
+df <- within(df, date <- paste(trip_month, trip_day, trip_hour, sep="-"))
+
+df <- select(df, date, everything())
+
+head(df,5)
+
+```
+
+
+```{r}
+#
+#df_tidy <- df %>%
+#  select(date, pickup_location_id, trip_per_hour) %>%
+#  tidyr::pivot_longer(-date, names_to = 'zone', values_to = 'trips', #convert = TRUE)
+#  #tidyr::gather('zone','trips',-date,convert=TRUE)
+
+tail(df[c(-2,-3,-4)])
+```
+
+```{r}
+q2 <- "SELECT EXTRACT(MONTH FROM pickup_datetime) AS trip_month, EXTRACT(DAY FROM pickup_datetime) AS trip_day, EXTRACT(HOUR FROM pickup_datetime) as trip_hour, count(1) AS trip_per_hour
+FROM `nyc_taxi.tlc_yellow_trips_2018`
+GROUP BY trip_month, trip_day, trip_hour
+ORDER BY trip_month, trip_day, trip_hour;"
+
+r2 <- query_exec(q2, project, use_legacy_sql = FALSE, max_pages = Inf)
+```
+```{r}
+r2 <- within(r2, date <- paste(trip_month, trip_day, trip_hour, sep="-"))
+
+r2 <- select(r2, date, everything())
+```
+
+
+```{r}
+ggplot(data = r2, aes(x = date, y = trip_per_hour))+
+  geom_line(color = "#B40037", size = 2)
+# Plot a subset of the data
+q4 <- subset(r2, trip_month > 8)
+ggplot(data = q4, aes(x = date, y = trip_per_hour)) + 
+  geom_line(color = "#51B400t", size = 2)
+```
+
