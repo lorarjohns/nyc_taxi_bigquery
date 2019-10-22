@@ -221,3 +221,11 @@ WHEN extra = 1.0 THEN '1' ELSE '0' END AS is_peak
 -- gets weekend 
 SELECT CASE WHEN FORMAT_DATE('%A',DATE(pickup_datetime)) IN ('Saturday', 'Sunday') THEN '1' ELSE '0' END AS is_weekend
 FROM `nyc_taxi.tlc_yellow_trips_2018`
+
+
+/** BIGQUERY MODEL CODE **/
+
+-- check the distribution of the hash values to use in TTV split
+--  SELECT count(1) AS row_count, MOD(ABS(FARM_FINGERPRINT(CAST(pickup_datetime AS STRING))),10) AS hash_values
+FROM `nyc-transit-256016.nyc_taxi.tlc_yellow_trips_2018` 
+GROUP BY hash_values;

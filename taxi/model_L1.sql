@@ -1,9 +1,13 @@
-SELECT * FROM
-ML.EVALUATE(
-  MODEL `nyc-transit-256016.nyc_taxi.tips_model`,
-  (
-  SELECT
-   	     --datetime info
+CREATE OR REPLACE MODEL `nyc-transit-256016.nyc_taxi.tips_model_L1`
+   OPTIONS (
+       model_type='linear_reg',
+       input_label_cols=['tip_amount'],
+       L1_REG=1,
+       max_iteration=50 ) AS
+       
+ 	   SELECT
+ 	   
+ 	     --datetime info
  	     EXTRACT(MONTH FROM pickup_datetime) AS pickup_month,
  	     FORMAT_DATE('%A',DATE(pickup_datetime)) as weekday_name,
  	     EXTRACT(DAY FROM pickup_datetime) AS p_day,
@@ -29,19 +33,15 @@ ML.EVALUATE(
  	     --geographical info
 	     pickup_location_id,
  	     dropoff_location_id,
-         tip_amount
+ 	     tip_amount
 
  	   FROM
- 	     `nyc-transit-256016.nyc_taxi._model_data_table`
+ 	     `nyc-transit-256016.nyc_taxi._model_data_table` -- the table I created
  	   WHERE
  	     trip_distance > 1 AND fare_amount BETWEEN 0.01 AND 3000.0
  	     AND DATETIME_DIFF(dropoff_datetime, pickup_datetime, HOUR) > 0 -- Filters out all the stuff we don't want to train on
  	     AND passenger_count > 0
  	     AND tip_amount >= 0
- 	   )
-    ) 
-    
-SELECT * FROM ML.TRAINING_INFO(MODEL `nyc-transit-256016.nyc_taxi.tips_model_L1`)
-
-SELECT * FROM ML.EVALUATE(MODEL `nyc-transit-256016.nyc_taxi.tips_model_L1`)
-
+ 	     AND MOD(ABS(FARM_FINGERPRINT(CAST(pickup_datetime AS STRING))),10) < 8; -- 80 % training data
+ 	     
+ 	     -- >= 8 for test

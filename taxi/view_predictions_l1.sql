@@ -1,12 +1,6 @@
-CREATE OR REPLACE MODEL `nyc_taxi.tlc_yellow_trips_2018.tips_model`
-   OPTIONS (
-       model_type='linear_reg',
-       input_label_cols=['tip_amount'],
-       L2_REG=1,
-       max_iteration=50 ) AS
-       
+SELECT tip_amount, predicted_tip_amount
+FROM ML.PREDICT(MODEL `nyc-transit-256016.nyc_taxi.tips_model_L1`, (
  	   SELECT
- 	   
  	     --datetime info
  	     EXTRACT(MONTH FROM pickup_datetime) AS pickup_month,
  	     FORMAT_DATE('%A',DATE(pickup_datetime)) as weekday_name,
@@ -41,19 +35,7 @@ CREATE OR REPLACE MODEL `nyc_taxi.tlc_yellow_trips_2018.tips_model`
  	     trip_distance > 1 AND fare_amount BETWEEN 0.01 AND 3000.0
  	     AND DATETIME_DIFF(dropoff_datetime, pickup_datetime, HOUR) > 0 -- Filters out all the stuff we don't want to train on
  	     AND passenger_count > 0
- 	     AND tip_amount >= 0;
- 	     
- 	   
- /** https://www.oreilly.com/learning/repeatable-sampling-of-data-sets-in-bigquery-for-machine-learning 
-AND ABS(HASH(tip_per_mile) % 10 < 8)) = dataset.TRAIN  
--- MOD(data,1000) to sample 1/1000th of the data, e.g.
-
-to manually split up your data by tip_per_mile and get 
-approximately 80% of the data set
-HASH function returns the same value any time it is invoked 
-on a specific column
-to split on a different y_train, invoke that column's name.
-
-for validation data: change the < 8 in the query above to == 8,
-and for testing data, change it to == 9. This way, you get 10% of 
-samples in validation and 10% in testing. **/
+ 	     AND tip_amount >= 0
+ 	     AND MOD(ABS(FARM_FINGERPRINT(CAST(pickup_datetime AS STRING))),10) >= 8
+    )
+   )
