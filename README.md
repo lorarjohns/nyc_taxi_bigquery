@@ -1,4 +1,4 @@
-<h1 align="center">Welcome to DS4A_workspace</h1>
+<h1 align="center">Welcome to Hot Tips for Cabbies: Using Big Data to Optimize NYC Taxi Gratuities  👋</h1>
 <p>
   <a href="#" target="_blank">
     <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
@@ -8,9 +8,20 @@
   </a>
 </p>
 
-> Correlation One summit with project on NYC yellow cab data
+> Using BigQuery's native Machine Learning tools and cloud database, can we discover the latent factors that lead to the greatest tips for working cab drivers in NYC?
+
+## The Goal: Fit a model to predict the gratuities on a fare
 
 
+## The Data: New York City Yellow Taxi Rides in 2018
+
+```sql
+
+```
+
+## The Model: Machine Learning in BigQuery
+
+![batch gradient descent](batch_gradient_descent.gif)
 ## Author
 
 👤 **Lora Johns**
