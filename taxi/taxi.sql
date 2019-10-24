@@ -1,4 +1,4 @@
-SELECT
+/**SELECT
 CONCAT(
     'https://stackoverflow.com/questions/',
     CAST(id as STRING)) as url,
@@ -6,26 +6,29 @@ view_count
 FROM `bigquery-public-data.stackoverflow.posts_questions`
 WHERE tags like '%google-bigquery%'
 ORDER BY view_count DESC
+**/
 
-
+-- look at the long end of the distance data
 SELECT
     CAST(trip_distance AS FLOAT64) AS distance, CAST(total_amount AS FLOAT64) AS total
 FROM `nyc_taxi.tlc_yellow_trips_2018`
 ORDER BY trip_distance DESC
 LIMIT 15;
 
-
+-- look at the short end of the distance data
 SELECT
     CAST(trip_distance AS FLOAT64) AS distance, CAST(total_amount AS FLOAT64) AS total
 FROM `nyc_taxi.tlc_yellow_trips_2018`
 ORDER BY trip_distance ASC
 LIMIT 15;
 
+-- count the short/zero trips
 SELECT
     COUNT(CASE WHEN trip_distance < 1 THEN 1 ELSE NULL END) AS under_a_mile,
     COUNT(CASE WHEN trip_distance <= 0 THEN 1 ELSE NULL END) AS zero_distance_trips
 FROM `nyc_taxi.tlc_yellow_trips_2018`;
 
+-- get short trips
 SELECT
     CAST(trip_distance AS FLOAT64) AS distance, CAST(tip_amount AS FLOAT64) AS tip, 
     CAST(total_amount AS FLOAT64) AS total
@@ -33,7 +36,7 @@ FROM `nyc_taxi.tlc_yellow_trips_2018`
 WHERE trip_distance < 1
 ORDER BY trip_distance DESC;
 
-
+-- get the short trips' info
 SELECT
     CAST(trip_distance AS FLOAT64) AS distance, CAST(tip_amount AS FLOAT64) AS tip, 
     CAST(total_amount AS FLOAT64) AS total
@@ -41,6 +44,8 @@ FROM `nyc_taxi.tlc_yellow_trips_2018`
 WHERE trip_distance < 1
 ORDER BY total, tip DESC
 LIMIT 500;
+
+-- get summary stats for null distances
 SELECT
     CAST(trip_distance AS FLOAT64) AS distance, ROUND(MIN(tip_amount),4) AS min_tip, ROUND(AVG(tip_amount),4) 
     AS avg_tip, ROUND(MAX(tip_amount),4) AS max_tip
@@ -48,6 +53,8 @@ FROM `nyc_taxi.tlc_yellow_trips_2018`
 WHERE trip_distance = 0
 GROUP BY trip_distance
 ORDER BY trip_distance;
+
+-- get rides with 0 distance on the meter
 SELECT
     CAST(trip_distance AS FLOAT64) AS distance, ROUND(MIN(total_amount),4) AS min_fare, ROUND(AVG(total_amount),4) 
     AS avg_fare, ROUND(MAX(total_amount),4) AS max_fare
@@ -56,35 +63,37 @@ WHERE trip_distance = 0
 GROUP BY trip_distance
 ORDER BY trip_distance;
 
+-- get the rides with no passengers
 SELECT *
 FROM `nyc_taxi.tlc_yellow_trips_2018`
 WHERE passenger_count = 0; 
 
-
+-- get the ride duration
 SELECT DATETIME_DIFF(dropoff_datetime, pickup_datetime, MINUTE) AS trip_time
 FROM `nyc_taxi.tlc_yellow_trips_2018`
 ORDER BY trip_time;
 
-
+-- inspect the data
 SELECT
     trip_distance AS distance, total_amount AS total
 FROM `nyc_taxi.tlc_yellow_trips_2018`
 ORDER BY trip_distance DESC
 LIMIT 5000;
 
-
+-- look at the most expensive trips
 SELECT total_amount, trip_distance
 FROM `nyc_taxi.tlc_yellow_trips_2018`
 WHERE total_amount BETWEEN 10000 AND 11000
 ;
 
 
-
+-- calculate dollars per mile
 SELECT (total_amount/trip_distance) AS dollars_per_mile, trip_distance, total_amount
 FROM `nyc_taxi.tlc_yellow_trips_2018`
 WHERE trip_distance > 0
 ORDER BY dollars_per_mile DESC
 
+-- get the averages by hour-day-year
 SELECT 
   EXTRACT(MONTH FROM pickup_datetime) AS month,
   EXTRACT(DAY FROM pickup_datetime) AS day,
@@ -95,6 +104,8 @@ WHERE trip_distance BETWEEN 1 AND 2000 AND total_amount > 0
 GROUP BY month, day, hour
 ORDER BY month, day, hour
 ;
+
+-- map the rate code to the name it represents
 SELECT 
   pickup_datetime, dropoff_datetime,
   CASE 
@@ -110,6 +121,7 @@ ON dropoff_location_id = z2.zone_id
 WHERE trip_distance BETWEEN 1 AND 2000 AND total_amount > 0 AND rate_code IN ('2', '3', '4')
 ;
 
+-- get the summary statistics for the ride distance per hour-day-month
 SELECT 
   EXTRACT(MONTH FROM pickup_datetime) AS month,
   EXTRACT(DAY FROM pickup_datetime) AS day,
@@ -121,6 +133,7 @@ GROUP BY month, day, hour
 ORDER BY month, day, hour
 ;
 
+-- extract datetime parts and group by them to create a time series 
 SELECT 
   EXTRACT(MONTH FROM pickup_datetime) AS month,
   EXTRACT(DAY FROM pickup_datetime) AS day,
@@ -131,6 +144,8 @@ WHERE trip_distance BETWEEN 0 AND 2000 AND total_amount > 0
 GROUP BY month, day, hour
 ORDER BY month, day, hour
 ;
+
+-- extract datetime parts, add zone names, group by unit of time and geographic zone 
 SELECT 
   EXTRACT(MONTH FROM pickup_datetime) AS month,
   EXTRACT(DAY FROM pickup_datetime) AS day,
@@ -147,7 +162,12 @@ GROUP BY month, day, hour, pickup_location_id, pickup_zone, dropoff_location_id,
 ORDER BY month, day, hour
 ;
 
-WITH weekdays AS (SELECT ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] AS dayarray),
+-- create a view with weekday names and weekends encoded
+-- code for same-borough trips
+-- with zone names mapped to IDs
+-- uses a WITH statement
+WITH weekdays AS (SELECT ['Sunday','Monday','Tuesday','Wednesday',
+'Thursday','Friday','Saturday'] AS dayarray),
 
 trip_data AS (SELECT
    pickup_datetime, dropoff_datetime, dayarray[ORDINAL(EXTRACT(DAYOFWEEK FROM pickup_datetime))] AS day_of_week,
@@ -163,7 +183,10 @@ ON dropoff_location_id = d.zone_id
 WHERE total_amount BETWEEN 0 AND 10000)
 
 SELECT * FROM trip_data;
-WITH weekdays AS (SELECT ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] AS dayarray),
+
+-- create a view with weekday names and weekends encoded
+WITH weekdays AS (SELECT ['Sunday','Monday','Tuesday','Wednesday',
+'Thursday','Friday','Saturday'] AS dayarray),
 
 trip_data AS (SELECT
    pickup_datetime, dropoff_datetime, dayarray[ORDINAL(EXTRACT(DAYOFWEEK FROM pickup_datetime))] AS day_of_week,
@@ -182,6 +205,19 @@ WHERE total_amount BETWEEN 0 AND 10000 AND trip_distance > 0)
 
 SELECT * FROM trip_data
 LIMIT 16000;
+
+
+-- where are the shortest trips?
+SELECT
+    CAST(trip_distance AS FLOAT64) AS distance, CAST(tip_amount AS FLOAT64) AS tip, 
+    CAST(total_amount AS FLOAT64) AS total, p.zone_id AS pickup, d.zone_id AS dropoff
+FROM `nyc_taxi.tlc_yellow_trips_2018`
+JOIN `nyc_taxi.taxi_zone_geom` p
+ON pickup_location_id = p.zone_id
+JOIN `nyc_taxi.taxi_zone_geom` d
+ON dropoff_location_id = d.zone_id
+WHERE trip_distance < 1
+ORDER BY trip_distance DESC;"""
 
 
 /** FEATURE ENGINEERING

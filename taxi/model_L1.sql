@@ -38,7 +38,7 @@ CREATE OR REPLACE MODEL `nyc-transit-256016.nyc_taxi.tips_model_L1`
  	   FROM
  	     `nyc-transit-256016.nyc_taxi._model_data_table` -- the table I created
  	   WHERE
- 	     trip_distance > 1 AND fare_amount BETWEEN 0.01 AND 3000.0
+ 	     trip_distance > 0 AND fare_amount BETWEEN 0.01 AND 3000.0
  	     AND DATETIME_DIFF(dropoff_datetime, pickup_datetime, HOUR) > 0 -- Filters out all the stuff we don't want to train on
  	     AND passenger_count > 0
  	     AND tip_amount >= 0
