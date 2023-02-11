@@ -32,7 +32,7 @@ greenlet==0.4.15
 grpc-google-iam-v1==0.12.3
 grpcio==1.24.1
 ipykernel==5.1.1
-ipython==7.6.1
+ipython==8.10.0
 jupyter==1.0.0
 matplotlib==3.1.0
 more-itertools==7.0.0
